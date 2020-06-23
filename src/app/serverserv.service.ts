@@ -5,16 +5,18 @@ import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
 import * as AWS from 'aws-sdk/global';
 import * as S3 from 'aws-sdk/clients/s3';
+import { Key } from 'protractor';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ServerservService {
 
-  objectList=[];
+  objectList = [];
   totalsize;
   currenttotal;
-  perecentUsed="0";
+  perecentUsed = "0";
+  currentFolder = '';
 
   constructor(
     private http: HttpClient,
@@ -54,10 +56,10 @@ export class ServerservService {
   updateToken(token) {
     localStorage.setItem('token', token);
   }
-  updateBucketName(buketName){
+  updateBucketName(buketName) {
     localStorage.setItem('bucketName', buketName);
   }
-  removeBucketName(){
+  removeBucketName() {
     localStorage.removeItem('bucketName');
   }
   getToken() {
@@ -66,6 +68,11 @@ export class ServerservService {
   deleteToken() {
     localStorage.removeItem('token');
   }
+
+  updateCurrentFolder(folderName) {
+    this.currentFolder = folderName;
+  }
+
   getUserData(): Observable<any> {
     let token = this.getToken();
     return this.http.post(
@@ -78,6 +85,7 @@ export class ServerservService {
       }
     );
   }
+
   getObjectList(): Observable<any> {
     let token = this.getToken();
     return this.http.post(
@@ -90,33 +98,34 @@ export class ServerservService {
       }
     );
   }
-  uploadFile(file) {
+
+  uploadFile(file, key) {
     const contentType = file.type;
     let token = this.getToken();
-    this.http.get(`${environment.url}/getkeyandsec`,{
+    this.http.get(`${environment.url}/getkeyandsec`, {
       headers: new HttpHeaders({
         authorization: token,
       }),
-    }).subscribe((data)=>{
+    }).subscribe((data) => {
       const bucket = new S3({
         accessKeyId: data['key'],
         secretAccessKey: data['secret'],
-        region: 'Mumbai',
+        region: 'ap-south-1',
       });
       const params = {
         Bucket: localStorage.getItem("bucketName"),
-        Key: file.name,
+        Key: key,
         Body: file,
         ACL: 'public-read',
-        ContentType: contentType
+        ContentType: contentType,
       };
       bucket.upload(params, function (err, data) {
-          if (err) {
-              console.log('There was an error uploading your file: ', err);
-              return false;
-          }
-          console.log('Successfully uploaded file.', data);
-          return true;
+        if (err) {
+          console.log('There was an error uploading your file: ', err);
+          return false;
+        }
+        console.log('Successfully uploaded file.', data);
+        return true;
       });
       //for upload progress
       // bucket
@@ -133,10 +142,10 @@ export class ServerservService {
       //     return true;
       //   });
     })
-    
+
   }
 
-  uploadFileDragandDrop(file,key) {
+  uploadFileDragandDrop(file, key) {
     const contentType = file.type;
     let token = this.getToken();
     this.http
@@ -162,27 +171,27 @@ export class ServerservService {
           ContentType: contentType,
         };
         bucket.upload(params, function (err, data) {
-            if (err) {
-                console.log('There was an error uploading your file: ', err);
-                return false;
-            }
-            console.log('Successfully uploaded file.', data);
-            return true;
+          if (err) {
+            console.log('There was an error uploading your file: ', err);
+            return false;
+          }
+          console.log('Successfully uploaded file.', data);
+          return true;
         });
         //for upload progress
-      //   bucket
-      //     .upload(params)
-      //     .on('httpUploadProgress', function (evt) {
-      //       console.log(evt.loaded + ' of ' + evt.total + ' Bytes');
-      //     })
-      //     .send(function (err, data) {
-      //       if (err) {
-      //         console.log('There was an error uploading your file: ', err);
-      //         return false;
-      //       }
-      //       console.log('Successfully uploaded file.', data);
-      //       return true;
-      //     });
+        //   bucket
+        //     .upload(params)
+        //     .on('httpUploadProgress', function (evt) {
+        //       console.log(evt.loaded + ' of ' + evt.total + ' Bytes');
+        //     })
+        //     .send(function (err, data) {
+        //       if (err) {
+        //         console.log('There was an error uploading your file: ', err);
+        //         return false;
+        //       }
+        //       console.log('Successfully uploaded file.', data);
+        //       return true;
+        //     });
       });
   }
 
@@ -218,24 +227,24 @@ export class ServerservService {
         });
       });
   }
-  updateObjectList(cb){
+  updateObjectList(cb) {
     this.getObjectList().subscribe(
       (data) => {
-        data['Contents'].forEach((item)=>{
-          item.folders=[];
+        data['Contents'].forEach((item) => {
+          item.folders = [];
         })
-        this.getSubfolders(data['Contents'],cb);
-        let total=0;
+        this.getSubfolders(data['Contents'], cb);
+        let total = 0;
         // console.log("data",data);
-      data['Contents'].forEach((item)=>{
-        // console.log(item.Size)
-        if(item.Size!=undefined){
-          total +=parseInt(item.Size);
-        }
-      })
-      // console.log("total",total);
-      this.currenttotal = (total / 1024 / 1024 / 1024).toFixed(4);
-      // console.log(this.currenttotal);
+        data['Contents'].forEach((item) => {
+          // console.log(item.Size)
+          if (item.Size != undefined) {
+            total += parseInt(item.Size);
+          }
+        })
+        // console.log("total",total);
+        this.currenttotal = (total / 1024 / 1024 / 1024).toFixed(4);
+        // console.log(this.currenttotal);
         // return data;
       },
       (err) => {
@@ -243,8 +252,8 @@ export class ServerservService {
       }
     );
   }
-  getSubfolders(data,cb){
-    this.objectList=[];
+  getSubfolders(data, cb) {
+    this.objectList = [];
     console.log(data);
     data.forEach((item) => {
       // console.log(item!={},item);
@@ -261,16 +270,17 @@ export class ServerservService {
               item.Key != objs.Key
             ) {
               // console.log(objs,index);
-              let arr=objs.Key.split("/")
+              let arr = objs.Key.split("/")
               // objs.folders.push(...item.folders);
-              objs.folders.push(arr.splice(0,1)[0]);
-              objs.Key=arr.join("/");
+              objs.folders.push(arr.splice(0, 1)[0]);
+              objs.Key = arr.join("/");
               item.url.push(objs);
               size += objs.Size;
-              data[index] = {Key:''};
+              data[index] = { Key: '' };
             }
           });
           item.Size = size;
+          item.folders.push(item.Key);
           this.objectList.push(item);
         }
       }
@@ -278,11 +288,11 @@ export class ServerservService {
     console.log(this.objectList);
     cb();
   }
-  delete(name):Observable<any>{
+  delete(name): Observable<any> {
     let token = this.getToken();
     return this.http.post(
       `${environment.url}/delete`,
-      { bucketName: localStorage.getItem('bucketName'),key:name },
+      { bucketName: localStorage.getItem('bucketName'), key: name },
       {
         headers: new HttpHeaders({
           authorization: token,
@@ -290,11 +300,24 @@ export class ServerservService {
       }
     );
   }
-  upgrade():Observable<any>{
+  upgrade(): Observable<any> {
     let token = this.getToken();
     return this.http.post(
       `${environment.url}/upgrade`,
       { email: localStorage.getItem('email') },
+      {
+        headers: new HttpHeaders({
+          authorization: token,
+        }),
+      }
+    );
+  }
+
+  createOrder(amount):Observable<any>{
+    let token = this.getToken();
+    return this.http.post(
+      `${environment.url}/createOrder`,
+      { email: localStorage.getItem('email'),amount:amount },
       {
         headers: new HttpHeaders({
           authorization: token,

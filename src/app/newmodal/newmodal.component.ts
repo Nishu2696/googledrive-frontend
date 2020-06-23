@@ -4,41 +4,40 @@ import { FormBuilder, FormControl, Validators } from '@angular/forms';
 import { ServerservService } from '../serverserv.service';
 import { Router } from '@angular/router';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { ToastService } from '../toast.service';
 
 @Component({
   selector: 'app-newmodal',
   templateUrl: './newmodal.component.html',
-  styleUrls: ['./newmodal.component.css']
+  styleUrls: ['./newmodal.component.css'],
 })
 export class NewmodalComponent implements OnInit {
-
-  @Input('folder') folder;
-
+  folder;
   closeResult = '';
   faPlus = faPlus;
   loader = false;
-  selected = "";
+  selected = '';
+  folderName = '';
   files = [];
-  folderName = "";
-
   constructor(
     private modalService: NgbModal,
     private fb: FormBuilder,
     private serv: ServerservService,
-    private router: Router
-  ) { }
-
-  ngOnInit(): void {
+    private router: Router,
+    private toastService: ToastService
+  ) {
+    this.folder = this.serv.currentFolder;
+    console.log('folder', this.folder);
   }
 
+  ngOnInit(): void {}
   onFileSelected(event) {
     if (event.target.files.length > 0) {
       console.log(event.target.files);
       this.files = event.target.files;
     }
   }
-  open(content) 
-  {
+  open(content) {
     this.modalService
       .open(content, { ariaLabelledBy: 'modal-basic-title' })
       .result.then(
@@ -69,25 +68,55 @@ export class NewmodalComponent implements OnInit {
       for (let i = 0; i < this.files.length; i++) {
         totalSize += this.files[i].size;
       }
-      console.log(totalSize);
-      if ((totalSize / 1024 / 1024 / 1024) + this.serv.currenttotal > this.serv.totalsize) {
-        alert("Your limit is reached can't upload anymore files");
-      }
-      else {
-        for (let i = 0; i < this.files.length; i++) {
-          console.log(this.files[i]);
-          this.serv.uploadFile(this.files[i]);
+      // console.log(totalSize);
+      // console.log(((totalSize / 1024 / 1024 ) +parseFloat(this.serv.currenttotal)))
+      // console.log(parseFloat(this.serv.totalsize)*1024)
+      // console.log(parseFloat(this.serv.totalsize)*1024)
+      if (((totalSize / 1024 / 1024) + parseFloat(this.serv.currenttotal)) > (parseFloat(this.serv.totalsize)*1024)) {
+        alert("File Size exceeds your storage limit");
+      } else {
+        if (this.folder == '') {
+          for (let i = 0; i < this.files.length; i++) {
+            console.log(this.files[i]);
+            let key = this.files[i].name;
+            this.serv.uploadFile(this.files[i], key);
+            this.showSuccess("File Uploaded Successfully")
+          }
+        } else {
+          for (let i = 0; i < this.files.length; i++) {
+            console.log(this.files[i]);
+            let key = `${this.folder}${this.files[i].name}`;
+            this.serv.uploadFile(this.files[i], key);
+            this.showSuccess("File Uploaded Successfully")
+          }
         }
       }
-    }
-    else if (this.selected = 'folder') {
+    } else if (this.selected == 'folder') {
       if (this.folder == '') {
         this.serv.uploadFolder(this.folderName);
+        this.showSuccess("Folder Uploaded Successfully")
       } else {
-        let folders = `${this.folder}/${this.folderName}`
+        let folders = `${this.folder}${this.folderName}`;
         this.serv.uploadFolder(folders);
+        this.showSuccess("Folder Uploaded Successfully")
       }
     }
+  }
+  showStandard(msg) {
+    this.toastService.show(msg);
+  }
 
+  showSuccess(msg) {
+    this.toastService.show(msg, {
+      classname: 'bg-success text-light',
+      delay: 2000,
+    });
+  }
+
+  showDanger(msg) {
+    this.toastService.show(msg, {
+      classname: 'bg-danger text-light',
+      delay: 5000,
+    });
   }
 }

@@ -13,10 +13,9 @@ import {
 @Component({
   selector: 'app-subfolder',
   templateUrl: './subfolder.component.html',
-  styleUrls: ['./subfolder.component.css']
+  styleUrls: ['./subfolder.component.css'],
 })
 export class SubfolderComponent implements OnInit {
-
   faPlus = faPlus;
   loader = true;
   userData;
@@ -35,7 +34,7 @@ export class SubfolderComponent implements OnInit {
     public serv: ServerservService,
     private toastService: ToastService,
     private activatedRoute: ActivatedRoute
-  ) { 
+  ) {
     this.serv.updateObjectList(() => {
       this.index = this.activatedRoute.snapshot.params.index;
       this.serv.getUserData().subscribe(
@@ -44,11 +43,17 @@ export class SubfolderComponent implements OnInit {
           this.serv.updateBucketName(data['bucketName']);
           console.log(data['totalsize']);
           this.serv.totalsize = parseFloat(data['totalsize']);
-          this.serv.perecentUsed =
-            String((this.serv.currenttotal / this.serv.totalsize) * 100) + '%';
+          this.perecentUsed =
+          String(
+            ((parseFloat(this.serv.currenttotal) /parseFloat(this.serv.totalsize)) * 100).toPrecision(4)
+          ) + '%';
           console.log(this.serv.totalsize, this.serv.perecentUsed);
           if (this.index.includes('-')) {
             for (let i of this.index.split('-')) {
+              this.folder = [...this.serv.objectList[parseInt(i)].folders].join(
+                '/'
+              );
+              this.serv.updateCurrentFolder(this.folder);
               this.serv.getSubfolders(
                 this.serv.objectList[parseInt(i)].url,
                 () => {
@@ -64,6 +69,10 @@ export class SubfolderComponent implements OnInit {
               );
             }
           } else {
+            this.folder = [...this.serv.objectList[this.index].folders].join(
+              '/'
+            );
+            this.serv.updateCurrentFolder(this.folder);
             this.serv.getSubfolders(
               this.serv.objectList[this.index].url,
               () => {
@@ -97,11 +106,16 @@ export class SubfolderComponent implements OnInit {
   }
   doubleClick(folders, index, name) {
     this.clickCount++;
+    this.pathToDownload="";
     this.fileNameToDownload = name;
     this.selectedIndex = index;
     this.folderTodelete = [...folders].join('/');
     if (this.clickCount == 2) {
-      this.router.navigate([`/dashboard/folder/${this.index}-${index}`]);
+      this.router.navigate([
+        `/dashboard/folder/${this.index}-${index}/${this.folder
+          .split('/')
+          .join('-')}`,
+      ]);
     }
     setTimeout(() => {
       this.clickCount = 0;
@@ -109,37 +123,54 @@ export class SubfolderComponent implements OnInit {
   }
   delete(name) {
     console.log(name);
-    if (name[name.length - 1] == '/') {
-      console.log(
-        this.serv.objectList[this.selectedIndex].url,
-        this.selectedIndex
-      );
-      for (let i of this.serv.objectList[this.selectedIndex].url) {
-        console.log(i.Key);
-        let fileToDelete = [...i['folders']].join('/') + '/' + i.Key;
-        this.serv.delete(fileToDelete).subscribe(
-          (data) => {
-            this.showSuccess(data.message);
-            this.serv.updateObjectList(() => {
-              console.log('from delete function-maindisplay' + name);
+    let ret = confirm('Do you really want to delete this file?');
+    if (ret) {
+      if (name[name.length - 1] == '/') {
+        console.log(
+          this.serv.objectList[this.selectedIndex].url,
+          this.selectedIndex
+        );
+        for (let i of this.serv.objectList[this.selectedIndex].url) {
+          console.log(i.Key);
+          let fileToDelete = [...i['folders']].join('/') + '/' + i.Key;
+          this.serv.delete(fileToDelete).subscribe(
+            (data) => {
+              this.showSuccess(data.message);
               this.serv.updateObjectList(() => {
-                this.index = this.activatedRoute.snapshot.params.index;
-                this.serv.getUserData().subscribe(
-                  (data) => {
-                    this.userData = data;
-                    this.serv.updateBucketName(data['bucketName']);
-                    console.log(data['totalsize']);
-                    this.serv.totalsize = parseFloat(data['totalsize']);
-                    this.serv.perecentUsed =
+                console.log('from delete function-maindisplay' + name);
+                this.serv.updateObjectList(() => {
+                  this.index = this.activatedRoute.snapshot.params.index;
+                  this.serv.getUserData().subscribe(
+                    (data) => {
+                      this.userData = data;
+                      this.serv.updateBucketName(data['bucketName']);
+                      console.log(data['totalsize']);
+                      this.serv.totalsize = parseFloat(data['totalsize']);
+                      this.perecentUsed =
                       String(
-                        (this.serv.currenttotal / this.serv.totalsize) * 100
+                        ((parseFloat(this.serv.currenttotal) /parseFloat(this.serv.totalsize)) * 100).toPrecision(4)
                       ) + '%';
-                    console.log(this.serv.totalsize, this.serv.perecentUsed);
-                    if (this.index.includes("-")) {
-                      for (let i of this.index.split('-')) {
-                        console.log(this.serv.objectList[parseInt(i)]);
+                      console.log(this.serv.totalsize, this.serv.perecentUsed);
+                      if (this.index.includes('-')) {
+                        for (let i of this.index.split('-')) {
+                          console.log(this.serv.objectList[parseInt(i)]);
+                          this.serv.getSubfolders(
+                            this.serv.objectList[parseInt(i)].url,
+                            () => {
+                              this.loader = false;
+                              console.log('inside folder');
+                              console.log(this.serv.objectList);
+                              if (this.serv.objectList.length != 0) {
+                                this.folder = [
+                                  ...this.serv.objectList[0].folders,
+                                ].join('/');
+                              }
+                            }
+                          );
+                        }
+                      } else {
                         this.serv.getSubfolders(
-                          this.serv.objectList[parseInt(i)].url,
+                          this.serv.objectList[this.index].url,
                           () => {
                             this.loader = false;
                             console.log('inside folder');
@@ -152,59 +183,68 @@ export class SubfolderComponent implements OnInit {
                           }
                         );
                       }
-                    } else {
-                      this.serv.getSubfolders(
-                        this.serv.objectList[this.index].url,
-                        () => {
-                          this.loader = false;
-                          console.log('inside folder');
-                          console.log(this.serv.objectList);
-                          if (this.serv.objectList.length != 0) {
-                            this.folder = [
-                              ...this.serv.objectList[0].folders,
-                            ].join('/');
-                          }
-                        }
-                      );
+                    },
+                    (err) => {
+                      console.log(err);
+                      // alert(err.error.message);
+                      this.showDanger(err.error.message);
+                      this.router.navigate(['/']);
                     }
-                  },
-                  (err) => {
-                    console.log(err);
-                    // alert(err.error.message);
-                    this.showDanger(err.error.message);
-                    this.router.navigate(['/']);
-                  }
-                );
+                  );
+                });
               });
-            });
-          },
-          (err) => {
-            console.log(err);
-          }
-        );
+            },
+            (err) => {
+              console.log(err);
+            }
+          );
+        }
       }
-    }
-    this.serv.delete(`${this.folderTodelete}/${name}`).subscribe(
-      (data) => {
-        console.log(`${this.folderTodelete}/${name}`);
-        this.showSuccess(data.message);
-        this.serv.updateObjectList(() => {
-          this.index = this.activatedRoute.snapshot.params.index;
-          this.serv.getUserData().subscribe(
-            (data) => {
-              this.userData = data;
-              this.serv.updateBucketName(data['bucketName']);
-              console.log(data['totalsize']);
-              this.serv.totalsize = parseFloat(data['totalsize']);
-              this.serv.perecentUsed =
-                String((this.serv.currenttotal / this.serv.totalsize) * 100) +
-                '%';
-              console.log(this.serv.totalsize, this.serv.perecentUsed);
-              if (this.index.includes('-')) {
-                for (let i of this.index.split('-')) {
-                  console.log(this.serv.objectList[parseInt(i)]);
+      this.serv.delete(`${this.folderTodelete}/${name}`).subscribe(
+        (data) => {
+          console.log(`${this.folderTodelete}/${name}`);
+          this.showSuccess(data.message);
+          this.serv.updateObjectList(() => {
+            this.index = this.activatedRoute.snapshot.params.index;
+            this.serv.getUserData().subscribe(
+              (data) => {
+                this.userData = data;
+                this.serv.updateBucketName(data['bucketName']);
+                console.log(data['totalsize']);
+                this.serv.totalsize = parseFloat(data['totalsize']);
+                this.serv.perecentUsed =
+                  String((this.serv.currenttotal / this.serv.totalsize) * 100) +
+                  '%';
+                console.log(this.serv.totalsize, this.serv.perecentUsed);
+                if (this.index.includes('-')) {
+                  for (let i of this.index.split('-')) {
+                    console.log(this.serv.objectList[parseInt(i)]);
+                    this.serv.getSubfolders(
+                      this.serv.objectList[parseInt(i)].url,
+                      () => {
+                        this.loader = false;
+                        console.log('inside folder');
+                        console.log(this.serv.objectList);
+                        if (this.serv.objectList.length != 0) {
+                          this.folder = [
+                            ...this.serv.objectList[0].folders,
+                          ].join('/');
+                        } else {
+                          this.folder = [
+                            ...this.serv.objectList[this.index].folders,
+                          ].join('/');
+                          this.serv.updateCurrentFolder(this.folder);
+                        }
+                      }
+                    );
+                  }
+                } else {
+                  this.folder = [
+                    ...this.serv.objectList[this.index].folders,
+                  ].join('/');
+                  this.serv.updateCurrentFolder(this.folder);
                   this.serv.getSubfolders(
-                    this.serv.objectList[parseInt(i)].url,
+                    this.serv.objectList[this.index].url,
                     () => {
                       this.loader = false;
                       console.log('inside folder');
@@ -217,40 +257,23 @@ export class SubfolderComponent implements OnInit {
                     }
                   );
                 }
-              } else {
-                this.serv.getSubfolders(
-                  this.serv.objectList[this.index].url,
-                  () => {
-                    this.loader = false;
-                    console.log('inside folder');
-                    console.log(this.serv.objectList);
-                    if (this.serv.objectList.length != 0) {
-                      this.folder = [...this.serv.objectList[0].folders].join(
-                        '/'
-                      );
-                    }
-                  }
-                );
+              },
+              (err) => {
+                console.log(err);
+                // alert(err.error.message);
+                this.showDanger(err.error.message);
+                this.router.navigate(['/']);
               }
-            },
-            (err) => {
-              console.log(err);
-              // alert(err.error.message);
-              this.showDanger(err.error.message);
-              this.router.navigate(['/']);
-            }
-          );
-        });
-      },
-      (err) => {
-        console.log(err);
-      }
-    );
+            );
+          });
+        },
+        (err) => {
+          console.log(err);
+        }
+      );
+    }
   }
-
-  ngOnInit(): void {
-  }
-
+  ngOnInit(): void {}
   showStandard(msg) {
     this.toastService.show(msg);
   }
@@ -275,15 +298,23 @@ export class SubfolderComponent implements OnInit {
       if (droppedFile.fileEntry.isFile) {
         const fileEntry = droppedFile.fileEntry as FileSystemFileEntry;
         fileEntry.file((file: File) => {
-          // Here you can access the real file
-          if(droppedFile.relativePath.includes("/")){
-            this.serv.uploadFolder(
-              `${this.folder}/${droppedFile.relativePath.split('/')[0]}`
-            );
+          if (
+            file.size / 1024 / 1024 + parseFloat(this.serv.currenttotal) >
+            parseFloat(this.serv.totalsize) * 1024
+          ) {
+            alert('File Size exceeds your storage limit');
+          } else {
+            // Here you can access the real file
+            if (droppedFile.relativePath.includes('/')) {
+              this.serv.uploadFolder(
+                `${this.folder}/${droppedFile.relativePath.split('/')[0]}`
+              );
+            }
+            let key = `${this.folder}/${droppedFile.relativePath}`;
+            this.serv.uploadFileDragandDrop(file, key);
+            console.log('hey there', droppedFile.relativePath, this.folder);
+            this.showSuccess('Files uploaded Successfully');
           }
-          let key = `${this.folder}/${droppedFile.relativePath}`;
-          this.serv.uploadFileDragandDrop(file, key);
-          console.log('hey there', droppedFile.relativePath, this.folder);
 
           /**
           // You could upload it like this:
@@ -305,9 +336,10 @@ export class SubfolderComponent implements OnInit {
         // It was a directory (empty directories are added, otherwise only files)
         const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
         console.log(droppedFile.relativePath, fileEntry);
+        this.showSuccess('Files uploaded Successfully');
       }
     }
-    this.showSuccess('Files uploaded Successfully');
+    
   }
 
   public fileOver(event) {
@@ -317,5 +349,4 @@ export class SubfolderComponent implements OnInit {
   public fileLeave(event) {
     console.log(event);
   }
-
 }

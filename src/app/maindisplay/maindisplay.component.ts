@@ -8,11 +8,10 @@ import { NgxFileDropEntry, FileSystemFileEntry, FileSystemDirectoryEntry } from 
 @Component({
   selector: 'app-maindisplay',
   templateUrl: './maindisplay.component.html',
-  styleUrls: ['./maindisplay.component.css']
+  styleUrls: ['./maindisplay.component.css'],
 })
 export class MaindisplayComponent implements OnInit {
-
-  faPlus=faPlus;
+  faPlus = faPlus;
   loader = true;
   userData;
   perecentUsed;
@@ -21,12 +20,11 @@ export class MaindisplayComponent implements OnInit {
   clickCount = 0;
   selectedIndex = 0;
   public files: NgxFileDropEntry[] = [];
-
   constructor(
     private router: Router,
     public serv: ServerservService,
     private toastService: ToastService
-  ) { 
+  ) {
     this.serv.updateObjectList(() => {
       this.serv.getUserData().subscribe(
         (data) => {
@@ -58,7 +56,7 @@ export class MaindisplayComponent implements OnInit {
           this.serv.currenttotal = (total / 1024 / 1024 / 1024).toFixed(4);
           this.perecentUsed =
             String(
-              (parseFloat(this.serv.currenttotal) / this.serv.totalsize) * 100
+              ((parseFloat(this.serv.currenttotal) /parseFloat(this.serv.totalsize)) * 100).toPrecision(4)
             ) + '%';
           console.log(
             this.perecentUsed,
@@ -83,9 +81,10 @@ export class MaindisplayComponent implements OnInit {
   doubleClick(index, name) {
     this.clickCount++;
     this.fileNameToDownload = name;
+    this.pathToDownload="";
     this.selectedIndex = index;
     if (this.clickCount == 2) {
-      this.router.navigate([`/dashboard/folder/${index}`]);
+      this.router.navigate([`/dashboard/folder/${index}/${name}`]);
     }
     setTimeout(() => {
       this.clickCount = 0;
@@ -93,43 +92,43 @@ export class MaindisplayComponent implements OnInit {
   }
   delete(name) {
     console.log(name);
-    if (name[name.length - 1] == '/') {
-      console.log(
-        this.serv.objectList[this.selectedIndex].url,
-        this.selectedIndex
-      );
-      for (let i of this.serv.objectList[this.selectedIndex].url) {
-        console.log(i.Key);
-        let fileToDelete=[...i['folders']].join('/')+"/"+i.Key;
-        this.serv.delete(fileToDelete).subscribe(
-          (data) => {
-            this.showSuccess(data.message);
-            this.serv.updateObjectList(() => {
-              console.log('from delete function-maindisplay' + name);
-            });
-          },
-          (err) => {
-            console.log(err);
-          }
+    let ret=confirm("Do you really want to delete the file?");
+    if(ret){
+      if (name[name.length - 1] == '/') {
+        console.log(
+          this.serv.objectList[this.selectedIndex].url,
+          this.selectedIndex
         );
+        for (let i of this.serv.objectList[this.selectedIndex].url) {
+          console.log(i.Key);
+          let fileToDelete=[...i['folders']].join('/')+"/"+i.Key;
+          this.serv.delete(fileToDelete).subscribe(
+            (data) => {
+              this.showSuccess(data.message);
+              this.serv.updateObjectList(() => {
+                console.log('from delete function-maindisplay' + name);
+              });
+            },
+            (err) => {
+              console.log(err);
+            }
+          );
+        }
       }
+      this.serv.delete(name).subscribe(
+        (data) => {
+          this.showSuccess(data.message);
+          this.serv.updateObjectList(() => {
+            console.log('from delete function-maindisplay');
+          });
+        },
+        (err) => {
+          console.log(err);
+        }
+      );
     }
-    this.serv.delete(name).subscribe(
-      (data) => {
-        this.showSuccess(data.message);
-        this.serv.updateObjectList(() => {
-          console.log('from delete function-maindisplay');
-        });
-      },
-      (err) => {
-        console.log(err);
-      }
-    );
   }
-
-  ngOnInit(): void {
-  }
-
+  ngOnInit(): void {}
   showStandard(msg) {
     this.toastService.show(msg);
   }
@@ -147,8 +146,8 @@ export class MaindisplayComponent implements OnInit {
       delay: 5000,
     });
   }
-
-  dropped(files: NgxFileDropEntry[]) {
+ 
+   dropped(files: NgxFileDropEntry[]) {
     this.files = files;
     for (const droppedFile of files) {
  
@@ -158,10 +157,16 @@ export class MaindisplayComponent implements OnInit {
         fileEntry.file((file: File) => {
  
           // Here you can access the real file
-          this.serv.uploadFolder(droppedFile.relativePath.split('/')[0]);
-          this.serv.uploadFileDragandDrop(file,droppedFile.relativePath);
-          console.log("hey there",droppedFile.relativePath, file);
- 
+          if (((file.size / 1024 / 1024) + parseFloat(this.serv.currenttotal)) > (parseFloat(this.serv.totalsize)*1024)) {
+            alert("Your limit is reached can't upload anymore files");
+          }else{
+            if(droppedFile.relativePath.includes("/")){
+              this.serv.uploadFolder(droppedFile.relativePath.split('/')[0]);
+            }
+            this.serv.uploadFileDragandDrop(file,droppedFile.relativePath);
+            console.log("hey there",droppedFile.relativePath, file);
+            this.showSuccess("Files uploaded Successfully");
+          }
           /**
           // You could upload it like this:
           const formData = new FormData()
@@ -183,9 +188,10 @@ export class MaindisplayComponent implements OnInit {
         // It was a directory (empty directories are added, otherwise only files)
         const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
         console.log(droppedFile.relativePath, fileEntry);
+        this.showSuccess("Files uploaded Successfully");
       }
     }
-    this.showSuccess("Files uploaded Successfully");
+   
   }
  
 public fileOver(event){
@@ -195,5 +201,4 @@ public fileOver(event){
 public fileLeave(event){
     console.log(event);
   }
-
 }

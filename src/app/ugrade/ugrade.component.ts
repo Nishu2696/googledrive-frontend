@@ -8,12 +8,11 @@ import { ServerservService } from '../serverserv.service';
 import { ToastService } from '../toast.service';
 
 @Component({
-  selector: 'app-ugrade',
-  templateUrl: './ugrade.component.html',
-  styleUrls: ['./ugrade.component.css']
+  selector: 'app-upgrade',
+  templateUrl: './upgrade.component.html',
+  styleUrls: ['./upgrade.component.css'],
 })
-export class UgradeComponent implements OnInit {
-
+export class UpgradeComponent implements OnInit {
   faTimes = faTimes;
   faCheck = faCheck;
   userData;
@@ -25,7 +24,7 @@ export class UgradeComponent implements OnInit {
     name: 'Drive Stack',
     description: 'Upgrade Storage',
     amount: 100, // razorpay takes amount in paisa
-    // order_id: "order_EzPOcsMLDnuBa9",
+    order_id: "order_EzPOcsMLDnuBa9",
     prefill: {
       name: 'uname',
       email: 'uname@gmail.com', // add your email id
@@ -53,8 +52,7 @@ export class UgradeComponent implements OnInit {
     private winRef: WindowRefService,
     private router: Router,
     private toastService: ToastService
-  ) { 
-    
+  ) {
     this._window = this.winRef.nativeWindow;
     this.serv.getUserData().subscribe((data)=>{
       this.userData=data;
@@ -67,36 +65,39 @@ export class UgradeComponent implements OnInit {
     // this.winRef.getOrderId(parseFloat(price)*100,id).subscribe((data)=>{
     //   console.log(data);
     // },(err)=>console.log(err))
-    this.options.amount = parseFloat(price) * 100;
+    this.serv.createOrder(parseFloat(price)*100).subscribe((data)=>{
+      console.log(data);
+      this.options.amount = parseFloat(price) * 100;
+      this.options.order_id=data.id;
     this.rzp = new this.winRef.nativeWindow['Razorpay'](this.options);
     this.rzp.open();
+    })
+    
   }
   paymentHandler(res: any) {
     this.zone.run(() => {
       // add API call here
       console.log(res);
-      // alert("upgraded");
-      this.serv.upgrade().subscribe((data)=>{
-        this.showSuccess(data.message);
-      },(err)=>{
-        this.showDanger(err.error.message);
-      })
-      this.router.navigate(['/dashboard/upgrade']);
-      // let generated_signature = CryptoJS.HmacSHA256(res.razorpay_order_id + "|" + res.razorpay_payment_id,"V3iI59d2EyyBpKAxThdGHLTT");
-      // if (generated_signature == res.razorpay_signature) {
-      //   console.log("payment is successful");
-      //   this.router.navigate(["/payment-successfull"])
-      // }
-      // else{
-      //   console.log(generated_signature,res.razorpay_signature)
-      //   alert("there is some error!Please try again")
-      // }
+      
+      let generated_signature = CryptoJS.HmacSHA256(res.razorpay_order_id + "|" + res.razorpay_payment_id,"V3iI59d2EyyBpKAxThdGHLTT");
+      if (generated_signature == res.razorpay_signature) {
+          console.log("payment is successful");
+          // this.router.navigate(["/payment-successfull"])
+          this.serv.upgrade().subscribe((data)=>{
+            this.showSuccess("Storage Upgraded");
+          },(err)=>{
+            this.showDanger(err.error.message);
+          })
+          this.router.navigate(['/dashboard/upgrade']);
+      }
+      else{
+        console.log(generated_signature,res.razorpay_signature)
+        this.showDanger("There is some error!Please try again");
+        this.router.navigate(['/dashboard/upgrade']);
+      }
     });
   }
-
-  ngOnInit(): void {
-  }
-
+  ngOnInit(): void {}
   common = {
     higlight: 'Unlimited',
     period: '/month',
@@ -120,13 +121,11 @@ export class UgradeComponent implements OnInit {
       tier: 'Plus',
       price: '500',
       list: [
-        '5 User',
         '2GB Storage',
-        'Unlimited Public Projects',
+        'Unlimited retrieval',
         'Community Access',
-        'Unlimited Private Projects',
-        'Dedicated Phone Support',
-        'Free Subdomain',
+        'High security',
+        'Dedicated server',
         'Monthly Status Reports',
       ],
     },
@@ -175,7 +174,7 @@ export class UgradeComponent implements OnInit {
   showSuccess(msg) {
     this.toastService.show(msg, {
       classname: 'bg-success text-light',
-      delay: 2000,
+      delay: 4000,
     });
   }
 
@@ -185,5 +184,4 @@ export class UgradeComponent implements OnInit {
       delay: 5000,
     });
   }
-
 }
