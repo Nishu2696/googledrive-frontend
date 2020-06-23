@@ -9,6 +9,8 @@ import { VerificationComponent } from './verification/verification.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { AuthGuard } from './auth.guard';
 import { MaindisplayComponent } from './maindisplay/maindisplay.component';
+import { FoldersComponent } from './folders/folders.component';
+import { SubfolderComponent } from './subfolder/subfolder.component';
 
 
 const routes: Routes = [
@@ -37,10 +39,13 @@ const routes: Routes = [
       path:'',
       component:MaindisplayComponent
     },
-    // {
-    //   path:'shorturl',
-    //   component:ShorturlComponent
-    // }
+    {
+      path:'folder/:index',
+      component:FoldersComponent
+    },{
+      path:'subfolder/:index',
+      component:SubfolderComponent
+    }
   ]
   }
 ];

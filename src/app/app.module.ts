@@ -21,6 +21,9 @@ import { ResetpassComponent } from './resetpass/resetpass.component';
 import { ToastContainerComponent } from './toast-container/toast-container.component';
 import { VerificationComponent } from './verification/verification.component';
 import { FoldersComponent } from './folders/folders.component';
+import { SubfolderComponent } from './subfolder/subfolder.component';
+import { UgradeComponent } from './ugrade/ugrade.component';
+import { NgxFileDropModule } from 'ngx-file-drop';
 
 @NgModule({
   declarations: [
@@ -34,7 +37,9 @@ import { FoldersComponent } from './folders/folders.component';
     ResetpassComponent,
     ToastContainerComponent,
     VerificationComponent,
-    FoldersComponent
+    FoldersComponent,
+    SubfolderComponent,
+    UgradeComponent
   ],
   imports: [
     BrowserModule,
@@ -44,7 +49,8 @@ import { FoldersComponent } from './folders/folders.component';
     HttpClientModule,
     FontAwesomeModule,
     NgbModule,
-    FormsModule
+    FormsModule,
+    NgxFileDropModule
   ],
   providers: [
     AuthGuard,
