@@ -1,0 +1,90 @@
+<div class="container mt-5">
+    <!-- Toaster Container componet -->
+    <app-toast-container aria-live="polite" aria-atomic="true"></app-toast-container>
+    <!--  -->
+    <div class="row mt-5" *ngIf="loader">
+        <div class="col-lg-12  mt-5 text-center">
+            <div class="lds-roller">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+    </div>
+    <div class="row" *ngIf="!loader && !userData.isVerified">
+        <div class="col-lg-12">
+            <div class="card text-center">
+                <div class="card-header">
+                    Alert
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Account not verified</h5>
+                    <p class="card-text">Please verify the account by clicking the link sent to your E-mail id :
+                        {{userData.email}} <br> to continue using all the features of the application</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- <div class="row" *ngIf="!loader && userData.isVerified">
+        <div class="col-lg-12">
+            <h1>VERIFIED</h1>
+        </div>
+    </div> -->
+</div>
+<div class="container" style="min-height: 20vh;" *ngIf="!loader && userData.isVerified">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-3">
+                    <app-newmodal></app-newmodal>
+                </div>
+                <div class="col-lg-3">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-danger" role="progressbar" aria-valuenow="70"
+                            aria-valuemin="0" aria-valuemax="100" [style.width]="perecentUsed">
+                            {{perecentUsed}} Used
+                        </div>
+                    </div>
+                    <h6>{{serv.currenttotal}}/{{serv.totalsize}} GB used</h6>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <hr>
+</div>
+
+<!--
+    // DRAG AND DROP METHOD
+    // NPM PACKAGE NAME IS 
+    // "npm i ngx-file-drop"
+
+    <div class="center">
+  <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="dropped($event)" (onFileOver)="fileOver($event)"
+    (onFileLeave)="fileLeave($event)">
+    <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
+      Optional custom content that replaces the the entire default content.
+      <button type="button" (click)="openFileSelector()">Browse Files</button>
+    </ng-template>
+  </ngx-file-drop>
+  <div class="upload-table">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+        </tr>
+      </thead>
+      <tbody class="upload-name-style">
+        <tr *ngFor="let item of files; let i=index">
+          <td><strong>{{ item.relativePath }}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+-->
